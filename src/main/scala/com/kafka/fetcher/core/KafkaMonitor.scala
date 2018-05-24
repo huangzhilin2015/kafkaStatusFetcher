@@ -19,9 +19,9 @@ import org.apache.kafka.common.{Cluster, Node}
 
 import scala.util.Random
 
-private[core] object KafkaMonitor extends Logging {
-  var zkUtils: ZkUtils = null
-  var config: KafkaMonitorConfig = null
+object KafkaMonitor extends Logging {
+  private[core] var zkUtils: ZkUtils = null
+  private[core] var config: KafkaMonitorConfig = null
   private var networkClient: NetworkClient = null
   private var clientPoll: Map[String, List[NetworkClient]] = Map()
   @volatile private var inited: Boolean = false

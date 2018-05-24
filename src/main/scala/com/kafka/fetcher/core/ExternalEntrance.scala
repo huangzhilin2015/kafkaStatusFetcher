@@ -114,7 +114,7 @@ object ExternalEntrance extends Logging {
     *
     * @param time
     */
-  private def validContext(node: Node, time: Time = Time.SYSTEM, timeout: Int = config.requestTimeOut): NetworkClient = {
+  private def validContext(node: Node, time: Time = Time.SYSTEM, timeout: Int = KafkaMonitor.config.requestTimeOut): NetworkClient = {
     val client = KafkaMonitor.findClient(node)
     //channel创建成功会更新client/ready状态
     if (!NetworkClientUtils.awaitReady(client, node, time, timeout))

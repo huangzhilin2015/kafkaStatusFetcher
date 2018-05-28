@@ -3,11 +3,13 @@ package com.kafka.fetcher.core
 import java.net.SocketTimeoutException
 import java.util
 
-import com.kafka.fetcher.core.callback.{FetchCommitedOffsetResponseHandler, GroupCoordinatorResponseHandler, ListOffsetResponseHandler, OffsetData}
+import com.kafka.fetcher.core.base.{AbstractEntrance}
+import com.kafka.fetcher.core.callback._
 import com.kafka.fetcher.core.request.RequestFactory
 import com.kafka.fetcher.exception.CoordinatorNotFoundException
 import com.kafka.fetcher.util.Logging
 import kafka.cluster.Broker
+import kafka.coordinator.group.GroupOverview
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.clients.{ClientRequest, NetworkClient, NetworkClientUtils}
 import org.apache.kafka.common.requests.{IsolationLevel, ListOffsetRequest}
@@ -22,25 +24,26 @@ import scala.collection.JavaConverters._
   * 把每个groupId对应的GroupCoordinator缓存起来，可以作为元数据对外提供
   * Created by huangzhilin on 2018-05-17.
   */
-object ExternalEntrance extends Logging {
+object ExternalEntrance extends AbstractEntrance with Logging {
   def main(arrays: Array[String]): Unit = {
     init()
-    var nodes: util.List[Broker] = getSurvivalNodes()
-    debug("nodes:" + nodes)
+    getCoordinator("loren_group")
   }
 
-  def init(): Unit = {
-    KafkaMonitor.initMonitorContext()
-  }
 
-  private def validMonitor(): Unit = {
-    if (!KafkaMonitor.isInitialized()) {
-      KafkaMonitor.synchronized(
-        if (!KafkaMonitor.isInitialized()) {
-          KafkaMonitor.initMonitorContext()
-        }
-      )
-    }
+  /**
+    * 获取当前有效group
+    *
+    * @return
+    */
+  def getGroups(): util.List[GroupOverview] = {
+    validMonitor
+    val node: Node = KafkaMonitor.leastLoadedNode()
+    val client: NetworkClient = validContext(node)
+    val request: ClientRequest = RequestFactory.getListGroupRequest(client, node, Time.SYSTEM);
+    NetworkClientUtils.sendAndReceive(client, request, Time.SYSTEM)
+    val res: ListGroupResponseHandler = request.callback().asInstanceOf[ListGroupResponseHandler]
+    res.result.asJava
   }
 
   /**

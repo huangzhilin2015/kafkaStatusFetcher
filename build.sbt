@@ -1,6 +1,6 @@
 lazy val root = (project in file("."))
   .settings(
-    name := "EchatKafkaMonitor",
+    name := "kafkastatusfetcher",
 
     version := "0.0.1",
 

@@ -3,9 +3,9 @@ package com.kafka.fetcher.core.request
 import java.util
 
 import com.kafka.fetcher.core.callback.handler.{ClientStatusUpdateHandler, GroupCoordinatorUpdateHandler}
-import com.kafka.fetcher.core.callback.{FetchCommitedOffsetResponseHandler, GroupCoordinatorResponseHandler, ListOffsetResponseHandler}
+import com.kafka.fetcher.core.callback.{FetchCommitedOffsetResponseHandler, GroupCoordinatorResponseHandler, ListGroupResponseHandler, ListOffsetResponseHandler}
 import org.apache.kafka.clients.{ClientRequest, NetworkClient}
-import org.apache.kafka.common.requests.{FindCoordinatorRequest, IsolationLevel, ListOffsetRequest, OffsetFetchRequest}
+import org.apache.kafka.common.requests._
 import org.apache.kafka.common.utils.Time
 import org.apache.kafka.common.{Node, TopicPartition}
 
@@ -16,6 +16,19 @@ import scala.collection.JavaConverters._
   * Created by huangzhilin on 2018-05-17.
   */
 object RequestFactory {
+  /**
+    * 获取ListGroup的request
+    *
+    * @param client
+    * @param node
+    * @param time
+    * @return
+    */
+  def getListGroupRequest(client: NetworkClient, node: Node, time: Time = Time.SYSTEM): ClientRequest = {
+    val requestBuilder = new ListGroupsRequest.Builder();
+    client.newClientRequest(node.idString, requestBuilder, time.milliseconds(), true, new ListGroupResponseHandler(node, client));
+  }
+
   /**
     * 获取coordinator的requst
     *

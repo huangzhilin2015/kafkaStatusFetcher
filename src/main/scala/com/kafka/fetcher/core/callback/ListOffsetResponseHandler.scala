@@ -15,7 +15,7 @@ import scala.collection.JavaConverters._
   * Created by huangzhilin on 2018-05-18.
   */
 class ListOffsetResponseHandler(groupId: String, node: Node, client: NetworkClient) extends Callbackable[CommonContext] {
-  var firstError: Errors = null
+  var errors: List[Errors] = List()
   var result: util.Map[TopicPartition, OffsetData] = new util.HashMap()
 
   override def onComplete(response: ClientResponse) = {
@@ -34,11 +34,11 @@ class ListOffsetResponseHandler(groupId: String, node: Node, client: NetworkClie
           }
         }
       } else {
-        firstError = if (firstError == null) e else firstError
+        errors.:+(e)
         debug(s"occur error for TopicPartition ${k} . detail: ${e}")
       }
     }
-    handleComplete(new CommonContext(groupId, node, client), if (result.size() > 0) null else firstError)
+    handleComplete(new CommonContext(groupId, node, client), errors)
   }
 
 

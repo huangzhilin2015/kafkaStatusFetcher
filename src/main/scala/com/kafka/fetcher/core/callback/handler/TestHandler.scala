@@ -11,7 +11,7 @@ class TestHandler extends CallBackFutureHandler[Int] with Logging {
     error(s"TestHandler.onSuccess.context=${context}")
   }
 
-  override def onFailure(context: Int, errors: Errors): Unit = {
+  override def onFailure(context: Int, errors: List[Errors]): Unit = {
     error(s"TestHandler.onFailure.context=${context}")
   }
 }

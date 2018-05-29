@@ -30,7 +30,7 @@ class CallBackFuture[T] {
     )
   }
 
-  def fireFailure(context: T, errors: Errors): Unit = {
+  def fireFailure(context: T, errors: List[Errors]): Unit = {
     breaker.breakable(
       while (true) {
         val handler: CallBackFutureHandler[T] = listeners.poll();

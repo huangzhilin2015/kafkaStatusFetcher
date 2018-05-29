@@ -13,9 +13,9 @@ class ClientStatusUpdateHandler extends CallBackFutureHandler[CommonContext] wit
     debug("ClientStatusUpdateHandler .onSuccess.handle")
   }
 
-  override def onFailure(context: CommonContext, errors: Errors): Unit = {
+  override def onFailure(context: CommonContext, errors: List[Errors]): Unit = {
     debug("ClientStatusUpdateHandler .onfailure.handle")
-    if (errors.code() == Errors.BROKER_NOT_AVAILABLE.code() || errors.code() == Errors.NETWORK_EXCEPTION.code()) {
+    if ((errors.apply(0) eq Errors.BROKER_NOT_AVAILABLE) || (errors.apply(0) eq Errors.NETWORK_EXCEPTION)) {
       context.client.close(context.node.idString())
     }
   }

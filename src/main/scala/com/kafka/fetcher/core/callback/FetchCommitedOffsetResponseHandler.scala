@@ -16,18 +16,18 @@ import scala.collection.JavaConverters._
   * Created by huangzhilin on 2018-05-18.
   */
 class FetchCommitedOffsetResponseHandler(groupId: String, node: Node, client: NetworkClient) extends Callbackable[CommonContext] {
-  var errors: Errors = null
+  var errors: List[Errors] = List()
   var result: util.Map[TopicPartition, OffsetAndMetadata] = null
 
   override def onComplete(response: ClientResponse): Unit = {
     debug(s"Received OffsetFetched response ${response}")
     val offsetFetchResponse = response.responseBody.asInstanceOf[OffsetFetchResponse]
     if (offsetFetchResponse.hasError) {
-      errors = offsetFetchResponse.error;
+      errors.:+(offsetFetchResponse.error());
       if (errors eq Errors.NOT_COORDINATOR) {
         KafkaMonitor.coordinatorDead(groupId)
       } else {
-        debug(s"Unexpected error in fetch offset response:${errors.message} ")
+        debug(s"Unexpected error in fetch offset response:${offsetFetchResponse.error().message} ")
       }
     } else {
       val offsets: util.Map[TopicPartition, OffsetAndMetadata] = new util.HashMap[TopicPartition, OffsetAndMetadata](offsetFetchResponse.responseData.size)
@@ -39,8 +39,8 @@ class FetchCommitedOffsetResponseHandler(groupId: String, node: Node, client: Ne
             debug(s"Topic of Partition ${k} does not exist.")
           } else {
             debug(s"Unexpected error in fetch offset response: ${error.message()}")
-            return
           }
+          errors.:+(error)
         } else if (v.offset >= 0) {
           offsets.put(k, new OffsetAndMetadata(v.offset, v.metadata))
         } else {

@@ -3,7 +3,7 @@ package com.kafka.fetcher.core.request
 import java.util
 
 import com.kafka.fetcher.core.callback.handler.{ClientStatusUpdateHandler, GroupCoordinatorUpdateHandler}
-import com.kafka.fetcher.core.callback.{FetchCommitedOffsetResponseHandler, GroupCoordinatorResponseHandler, ListGroupResponseHandler, ListOffsetResponseHandler}
+import com.kafka.fetcher.core.callback._
 import org.apache.kafka.clients.{ClientRequest, NetworkClient}
 import org.apache.kafka.common.requests._
 import org.apache.kafka.common.utils.Time
@@ -27,6 +27,19 @@ object RequestFactory {
   def getListGroupRequest(client: NetworkClient, node: Node, time: Time = Time.SYSTEM): ClientRequest = {
     val requestBuilder = new ListGroupsRequest.Builder();
     client.newClientRequest(node.idString, requestBuilder, time.milliseconds(), true, new ListGroupResponseHandler(node, client));
+  }
+
+  /**
+    * 获取group详细信息request
+    *
+    * @param client
+    * @param node
+    * @param groupIds
+    * @param time
+    */
+  def getDescripeGroupRequest(client: NetworkClient, node: Node, groupIds: util.List[String], time: Time = Time.SYSTEM): ClientRequest = {
+    val requestBuilder = new DescribeGroupsRequest.Builder(groupIds)
+    client.newClientRequest(node.idString(), requestBuilder, time.milliseconds(), true, new DescribeGroupsResponseHandler(null, node, client))
   }
 
   /**

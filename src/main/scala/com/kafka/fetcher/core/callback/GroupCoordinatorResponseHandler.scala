@@ -13,7 +13,7 @@ import org.apache.kafka.common.utils.Time
   */
 class GroupCoordinatorResponseHandler(groupId: String, client: NetworkClient, node: Node, time: Time = Time.SYSTEM) extends Callbackable[CommonContext] {
   var coordinator: Node = null
-  var errors: Errors = null
+  var errors: List[Errors] = List()
 
   override def onComplete(response: ClientResponse): Unit = {
     debug(s"Received GroupCoordinator response ${response}")
@@ -25,12 +25,11 @@ class GroupCoordinatorResponseHandler(groupId: String, client: NetworkClient, no
         findCoordinatorResponse.node.port);
       //try connect
       client.ready(coordinator, time.milliseconds())
-
     } else {
       debug(s"Group coordinator lookup failed: ${responseErrors.message}")
-      errors = responseErrors
+      errors.:+(responseErrors)
       coordinator = null
     }
-    handleComplete(new CommonContext(groupId, node, client), responseErrors)
+    handleComplete(new CommonContext(groupId, node, client), errors)
   }
 }

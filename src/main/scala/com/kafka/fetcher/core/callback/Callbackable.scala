@@ -17,8 +17,8 @@ trait Callbackable[T] extends RequestCompletionHandler with Logging {
     this
   }
 
-  def handleComplete(context: T, errors: Errors): Unit = {
-    if (errors != null) {
+  def handleComplete(context: T, errors: List[Errors]): Unit = {
+    if (errors != null && errors.length > 0) {
       future.fireFailure(context, errors)
     } else {
       future.fireSuccess(context)

@@ -1,9 +1,9 @@
 package com.kafka.fetcher.core
 
-import java.net.SocketTimeoutException
 import java.util
+import java.util.Collections
 
-import com.kafka.fetcher.core.base.{AbstractEntrance}
+import com.kafka.fetcher.core.base.AbstractEntrance
 import com.kafka.fetcher.core.callback._
 import com.kafka.fetcher.core.request.RequestFactory
 import com.kafka.fetcher.exception.CoordinatorNotFoundException
@@ -12,6 +12,7 @@ import kafka.cluster.Broker
 import kafka.coordinator.group.GroupOverview
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.clients.{ClientRequest, NetworkClient, NetworkClientUtils}
+import org.apache.kafka.common.requests.DescribeGroupsResponse.GroupMetadata
 import org.apache.kafka.common.requests.{IsolationLevel, ListOffsetRequest}
 import org.apache.kafka.common.utils.Time
 import org.apache.kafka.common.{Node, TopicPartition}
@@ -27,9 +28,26 @@ import scala.collection.JavaConverters._
 object ExternalEntrance extends AbstractEntrance with Logging {
   def main(arrays: Array[String]): Unit = {
     init()
-    getCoordinator("loren_group")
+    //val res = getHighWaterMarkOffset("loren_group", util.Arrays.asList(new TopicPartition("test", 0)))
+    val res = describeGroup(util.Arrays.asList("loren_group"))
+    println("555")
   }
 
+  /**
+    * 分组描述
+    *
+    * @param groups
+    * @return
+    */
+  def describeGroup(groups: util.List[String]): util.Map[String, GroupMetadata] = {
+    validMonitor()
+    val node: Node = KafkaMonitor.leastLoadedNode()
+    val client: NetworkClient = validContext(node)
+    val request: ClientRequest = RequestFactory.getDescripeGroupRequest(client, node, groups, Time.SYSTEM)
+    NetworkClientUtils.sendAndReceive(client, request, Time.SYSTEM)
+    val res: DescribeGroupsResponseHandler = request.callback().asInstanceOf[DescribeGroupsResponseHandler]
+    res.result
+  }
 
   /**
     * 获取当前有效group
@@ -113,19 +131,6 @@ object ExternalEntrance extends AbstractEntrance with Logging {
   }
 
   /**
-    * 保证请求上下文已经就绪
-    *
-    * @param time
-    */
-  private def validContext(node: Node, time: Time = Time.SYSTEM, timeout: Int = KafkaMonitor.config.requestTimeOut): NetworkClient = {
-    val client = KafkaMonitor.findClient(node)
-    //channel创建成功会更新client/ready状态
-    if (!NetworkClientUtils.awaitReady(client, node, time, timeout))
-      throw new SocketTimeoutException(s"Failed to connect within $timeout ms")
-    client
-  }
-
-  /**
     * 获取GroupCoordinator
     * 由于没有心跳，也没有动态更新
     * 所以此节点可能已经过期，使用前需要检测是否已经准备好接受请求
@@ -134,8 +139,6 @@ object ExternalEntrance extends AbstractEntrance with Logging {
     */
   def ensureCoordinator(groupId: String): Node = {
     validMonitor
-    /*if (!KafkaMonitor.isInitialized())
-      throw new KafkaMonitorNotInitializedException("kafkaMonitor not initialized.")*/
     var node: Node = KafkaMonitor.coordinator(groupId)
     if (node == null) {
       //尝试获取coordinator

@@ -9,6 +9,6 @@ trait CallBackFutureHandler[T] {
 
   def onSuccess(context: T)
 
-  def onFailure(context: T, errors: Errors)
+  def onFailure(context: T, errors: List[Errors])
 
 }

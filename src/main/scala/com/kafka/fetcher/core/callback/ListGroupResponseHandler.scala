@@ -14,15 +14,16 @@ import scala.collection.JavaConverters._
   */
 class ListGroupResponseHandler(node: Node, client: NetworkClient) extends Callbackable[CommonContext] {
   var result: List[GroupOverview] = null
-  var errors: Errors = null
+  var errors: List[Errors] = List()
 
   override def onComplete(response: ClientResponse) = {
-    println("ListGroupResponseHandler.onComplete.")
-    println(response)
+    debug(s"Received ListGroup response ${response}")
     if (response.hasResponse) {
       val listGroupResonse: ListGroupsResponse = response.responseBody().asInstanceOf[ListGroupsResponse]
-      if ((errors = listGroupResonse.error()) != Errors.NONE) {
+      if (listGroupResonse.error() eq Errors.NONE) {
         result = listGroupResonse.groups().asScala.map(group => GroupOverview(group.groupId, group.protocolType)).toList
+      } else {
+        errors.:+(listGroupResonse.error())
       }
     }
     handleComplete(new CommonContext(null, node, client), errors)

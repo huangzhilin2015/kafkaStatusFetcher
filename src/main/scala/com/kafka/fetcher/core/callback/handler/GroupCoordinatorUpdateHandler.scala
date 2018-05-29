@@ -14,9 +14,9 @@ class GroupCoordinatorUpdateHandler extends CallBackFutureHandler[CommonContext]
     KafkaMonitor.cacheCoordinator(context.groupId, context.node)
   }
 
-  override def onFailure(context: CommonContext, errors: Errors): Unit = {
+  override def onFailure(context: CommonContext, errors: List[Errors]): Unit = {
     debug("GroupCoordinatorUpdateHandler .onfailure.handle")
-    if (errors.code() == Errors.COORDINATOR_NOT_AVAILABLE.code() || errors.code() == Errors.NOT_COORDINATOR) {
+    if ((errors.apply(0) eq Errors.COORDINATOR_NOT_AVAILABLE) || (errors.apply(0) eq Errors.NOT_COORDINATOR)) {
       KafkaMonitor.coordinatorDead(context.groupId)
     }
   }

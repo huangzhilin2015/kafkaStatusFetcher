@@ -11,10 +11,6 @@ import org.apache.kafka.common.utils.Time
   * Created by huangzhilin on 2018-05-28.
   */
 trait AbstractEntrance {
-  protected def init(): Unit = {
-    KafkaMonitor.initMonitorContext()
-  }
-
   protected def validMonitor(): Unit = {
     if (!KafkaMonitor.isInitialized()) {
       KafkaMonitor.synchronized(

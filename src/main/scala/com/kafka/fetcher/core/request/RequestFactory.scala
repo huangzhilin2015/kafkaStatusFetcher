@@ -39,7 +39,9 @@ object RequestFactory {
     */
   def getDescripeGroupRequest(client: NetworkClient, node: Node, groupIds: util.List[String], time: Time = Time.SYSTEM): ClientRequest = {
     val requestBuilder = new DescribeGroupsRequest.Builder(groupIds)
-    client.newClientRequest(node.idString(), requestBuilder, time.milliseconds(), true, new DescribeGroupsResponseHandler(null, node, client))
+    client.newClientRequest(node.idString(), requestBuilder, time.milliseconds(), true,
+      new DescribeGroupsResponseHandler(null, node, client)
+        .addFutureListener(new GroupCoordinatorUpdateHandler()))
   }
 
   /**
@@ -104,7 +106,9 @@ object RequestFactory {
     topicPartitions.forEach(tp => buildTarget(tp))
     val requestBuilder = ListOffsetRequest.Builder.forConsumer(false, isolationLevel).setTargetTimes(target.asJava)
     client.newClientRequest(node.idString, requestBuilder, time.milliseconds(), true,
-      new ListOffsetResponseHandler(null, node, client).addFutureListener(new ClientStatusUpdateHandler()))
+      new ListOffsetResponseHandler(null, node, client)
+        .addFutureListener(new ClientStatusUpdateHandler())
+        .addFutureListener(new GroupCoordinatorUpdateHandler()))
   }
 
 

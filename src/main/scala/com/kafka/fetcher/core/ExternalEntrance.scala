@@ -1,7 +1,6 @@
 package com.kafka.fetcher.core
 
 import java.util
-import java.util.Collections
 
 import com.kafka.fetcher.core.base.AbstractEntrance
 import com.kafka.fetcher.core.callback._
@@ -11,6 +10,7 @@ import com.kafka.fetcher.util.Logging
 import kafka.cluster.Broker
 import kafka.coordinator.group.GroupOverview
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
+import org.apache.kafka.clients.consumer.internals.ConsumerProtocol
 import org.apache.kafka.clients.{ClientRequest, NetworkClient, NetworkClientUtils}
 import org.apache.kafka.common.requests.DescribeGroupsResponse.GroupMetadata
 import org.apache.kafka.common.requests.{IsolationLevel, ListOffsetRequest}
@@ -28,9 +28,15 @@ import scala.collection.JavaConverters._
 object ExternalEntrance extends AbstractEntrance with Logging {
   def main(arrays: Array[String]): Unit = {
     init()
-    //val res = getHighWaterMarkOffset("loren_group", util.Arrays.asList(new TopicPartition("test", 0)))
-    val res = describeGroup(util.Arrays.asList("loren_group"))
+    //val res0 = getGroups()
+    val res1 = getHighWaterMarkOffset("echat-chattask", util.Arrays.asList(new TopicPartition("chat_detail", 0)))
+    //val res2 = getCommitedOffset("echat-chattask", util.Arrays.asList(new TopicPartition("chat_detail", 0)))
+    //val res3 = describeGroups(util.Arrays.asList("echat-chattask"))
     println("555")
+  }
+
+  def init(): Unit = {
+    KafkaMonitor.initMonitorContext()
   }
 
   /**
@@ -39,11 +45,16 @@ object ExternalEntrance extends AbstractEntrance with Logging {
     * @param groups
     * @return
     */
-  def describeGroup(groups: util.List[String]): util.Map[String, GroupMetadata] = {
+  def describeGroups(groups: util.List[String]): util.Map[String, GroupMetadata] = {
+    groups.asScala.map(group => group -> describeGroup(group))
+      .toMap.asJava
+  }
+
+  private def describeGroup(groupId: String): GroupMetadata = {
     validMonitor()
-    val node: Node = KafkaMonitor.leastLoadedNode()
+    val node: Node = KafkaMonitor.coordinator(groupId)
     val client: NetworkClient = validContext(node)
-    val request: ClientRequest = RequestFactory.getDescripeGroupRequest(client, node, groups, Time.SYSTEM)
+    val request: ClientRequest = RequestFactory.getDescripeGroupRequest(client, node, util.Arrays.asList(groupId), Time.SYSTEM)
     NetworkClientUtils.sendAndReceive(client, request, Time.SYSTEM)
     val res: DescribeGroupsResponseHandler = request.callback().asInstanceOf[DescribeGroupsResponseHandler]
     res.result
@@ -54,14 +65,21 @@ object ExternalEntrance extends AbstractEntrance with Logging {
     *
     * @return
     */
-  def getGroups(): util.List[GroupOverview] = {
+  def getGroups(): util.Map[Node, List[GroupOverview]] = {
     validMonitor
-    val node: Node = KafkaMonitor.leastLoadedNode()
+    KafkaMonitor.getNodes()
+      .asScala.map(node => node -> listGroups(node))
+      .toMap.mapValues(groups => groups.filter(_.protocolType == ConsumerProtocol.PROTOCOL_TYPE))
+      .asJava
+  }
+
+  private def listGroups(node: Node): List[GroupOverview] = {
+    validMonitor
     val client: NetworkClient = validContext(node)
     val request: ClientRequest = RequestFactory.getListGroupRequest(client, node, Time.SYSTEM);
     NetworkClientUtils.sendAndReceive(client, request, Time.SYSTEM)
     val res: ListGroupResponseHandler = request.callback().asInstanceOf[ListGroupResponseHandler]
-    res.result.asJava
+    res.result
   }
 
   /**

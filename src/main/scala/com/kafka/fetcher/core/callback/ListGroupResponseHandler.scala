@@ -23,7 +23,7 @@ class ListGroupResponseHandler(node: Node, client: NetworkClient) extends Callba
       if (listGroupResonse.error() eq Errors.NONE) {
         result = listGroupResonse.groups().asScala.map(group => GroupOverview(group.groupId, group.protocolType)).toList
       } else {
-        errors.:+(listGroupResonse.error())
+        errors = errors.:+(listGroupResonse.error())
       }
     }
     handleComplete(new CommonContext(null, node, client), errors)

@@ -191,6 +191,10 @@ object KafkaMonitor extends Logging {
     nodes.get(Random.nextInt(nodes.size()))
   }
 
+  def getNodes(): util.List[Node] = {
+    nodes
+  }
+
   /**
     * 缓存GroupCoordinator
     *

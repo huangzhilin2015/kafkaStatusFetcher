@@ -34,7 +34,7 @@ class ListOffsetResponseHandler(groupId: String, node: Node, client: NetworkClie
           }
         }
       } else {
-        errors.:+(e)
+        errors = errors.:+(e)
         debug(s"occur error for TopicPartition ${k} . detail: ${e}")
       }
     }

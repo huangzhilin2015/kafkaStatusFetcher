@@ -27,9 +27,9 @@ class GroupCoordinatorResponseHandler(groupId: String, client: NetworkClient, no
       client.ready(coordinator, time.milliseconds())
     } else {
       debug(s"Group coordinator lookup failed: ${responseErrors.message}")
-      errors.:+(responseErrors)
+      errors = errors.:+(responseErrors)
       coordinator = null
     }
-    handleComplete(new CommonContext(groupId, node, client), errors)
+    handleComplete(new CommonContext(groupId, coordinator, client), errors)
   }
 }

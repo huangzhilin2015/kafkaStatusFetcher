@@ -23,12 +23,8 @@ class FetchCommitedOffsetResponseHandler(groupId: String, node: Node, client: Ne
     debug(s"Received OffsetFetched response ${response}")
     val offsetFetchResponse = response.responseBody.asInstanceOf[OffsetFetchResponse]
     if (offsetFetchResponse.hasError) {
-      errors.:+(offsetFetchResponse.error());
-      if (errors eq Errors.NOT_COORDINATOR) {
-        KafkaMonitor.coordinatorDead(groupId)
-      } else {
-        debug(s"Unexpected error in fetch offset response:${offsetFetchResponse.error().message} ")
-      }
+      errors = errors.:+(offsetFetchResponse.error());
+      debug(s"Expected error in fetch offset response:${offsetFetchResponse.error().message} ")
     } else {
       val offsets: util.Map[TopicPartition, OffsetAndMetadata] = new util.HashMap[TopicPartition, OffsetAndMetadata](offsetFetchResponse.responseData.size)
       for ((k: TopicPartition, v: OffsetFetchResponse.PartitionData) <- offsetFetchResponse.responseData.asScala) {
@@ -40,7 +36,7 @@ class FetchCommitedOffsetResponseHandler(groupId: String, node: Node, client: Ne
           } else {
             debug(s"Unexpected error in fetch offset response: ${error.message()}")
           }
-          errors.:+(error)
+          errors = errors.:+(error)
         } else if (v.offset >= 0) {
           offsets.put(k, new OffsetAndMetadata(v.offset, v.metadata))
         } else {

@@ -28,10 +28,10 @@ import scala.collection.JavaConverters._
 object ExternalEntrance extends AbstractEntrance with Logging {
   def main(arrays: Array[String]): Unit = {
     init()
-    //val res0 = getGroups()
+    val res0 = getGroups()
     val res1 = getHighWaterMarkOffset("echat-chattask", util.Arrays.asList(new TopicPartition("chat_detail", 0)))
     //val res2 = getCommitedOffset("echat-chattask", util.Arrays.asList(new TopicPartition("chat_detail", 0)))
-    //val res3 = describeGroups(util.Arrays.asList("echat-chattask"))
+    val res3 = describeGroups(util.Arrays.asList("echat-chattask"))
     println("555")
   }
 
@@ -52,7 +52,7 @@ object ExternalEntrance extends AbstractEntrance with Logging {
 
   private def describeGroup(groupId: String): GroupMetadata = {
     validMonitor()
-    val node: Node = KafkaMonitor.coordinator(groupId)
+    val node: Node = ensureCoordinator(groupId)
     val client: NetworkClient = validContext(node)
     val request: ClientRequest = RequestFactory.getDescripeGroupRequest(client, node, util.Arrays.asList(groupId), Time.SYSTEM)
     NetworkClientUtils.sendAndReceive(client, request, Time.SYSTEM)
@@ -65,11 +65,11 @@ object ExternalEntrance extends AbstractEntrance with Logging {
     *
     * @return
     */
-  def getGroups(): util.Map[Node, List[GroupOverview]] = {
+  def getGroups(): util.Map[Node, util.List[GroupOverview]] = {
     validMonitor
     KafkaMonitor.getNodes()
       .asScala.map(node => node -> listGroups(node))
-      .toMap.mapValues(groups => groups.filter(_.protocolType == ConsumerProtocol.PROTOCOL_TYPE))
+      .toMap.mapValues(groups => groups.filter(_.protocolType == ConsumerProtocol.PROTOCOL_TYPE).asJava)
       .asJava
   }
 

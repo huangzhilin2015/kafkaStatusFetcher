@@ -28,10 +28,16 @@ import scala.collection.JavaConverters._
 object ExternalEntrance extends AbstractEntrance with Logging {
   def main(arrays: Array[String]): Unit = {
     init()
+    var tps = new util.ArrayList[TopicPartition]()
+    tps.add(new TopicPartition("test_topic", 1))
+    tps.add(new TopicPartition("test_topic", 0))
     val res0 = getGroups()
-    val res1 = getHighWaterMarkOffset("echat-chattask", util.Arrays.asList(new TopicPartition("chat_detail", 0)))
+    val res1 = getHighWaterMarkOffset("loren_group", tps)
+    //getAllTopicsMetadata()
+    val res2 = getCommitedOffset("loren_group", tps)
+    chooseNode("loren_group", tps)
     //val res2 = getCommitedOffset("echat-chattask", util.Arrays.asList(new TopicPartition("chat_detail", 0)))
-    val res3 = describeGroups(util.Arrays.asList("echat-chattask"))
+    //val res3 = describeGroups(util.Arrays.asList("echat-chattask"))
     println("555")
   }
 
@@ -50,6 +56,12 @@ object ExternalEntrance extends AbstractEntrance with Logging {
       .toMap.asJava
   }
 
+  /**
+    * group详情
+    *
+    * @param groupId
+    * @return
+    */
   private def describeGroup(groupId: String): GroupMetadata = {
     validMonitor()
     val node: Node = ensureCoordinator(groupId)
@@ -73,6 +85,12 @@ object ExternalEntrance extends AbstractEntrance with Logging {
       .asJava
   }
 
+  /**
+    * 获取group列表
+    *
+    * @param node
+    * @return
+    */
   private def listGroups(node: Node): List[GroupOverview] = {
     validMonitor
     val client: NetworkClient = validContext(node)
@@ -106,6 +124,32 @@ object ExternalEntrance extends AbstractEntrance with Logging {
     KafkaMonitor.zkUtils.getAllBrokersInCluster().asJava
   }
 
+  def chooseNode(groupId: String, topicPartitions: util.List[TopicPartition]): Map[Node, util.List[TopicPartition]] = {
+    //首先获取每个topic下每个分区的leader [TopicPartition,Node]
+    val md: Map[TopicPartition, Node] = getAllTopicsMetadata()
+    if (md == null || md.size <= 0) {
+      return null
+    }
+    var requests: Map[Node, util.List[TopicPartition]] = Map()
+    topicPartitions.forEach(tp => {
+      val node = md(tp)
+      if (node != null) {
+        val ts: Option[util.List[TopicPartition]] = requests.get(node)
+        var tm = ts match {
+          case Some(t) => t
+          case None => null
+        }
+        if (tm == null) {
+          tm = new util.ArrayList[TopicPartition]()
+          requests += (node -> tm)
+        }
+        tm.add(tp)
+      }
+    })
+    //结果：每个node可能会有一组待发送request
+    requests
+  }
+
   /**
     * 获取log最大offset
     *
@@ -114,12 +158,28 @@ object ExternalEntrance extends AbstractEntrance with Logging {
     */
   def getHighWaterMarkOffset(groupId: String, topicPartitions: util.List[TopicPartition]): util.Map[TopicPartition, OffsetData] = {
     validMonitor
-    val node: Node = ensureCoordinator(groupId)
+    val chooseRes: Map[Node, util.List[TopicPartition]] = chooseNode(groupId, topicPartitions)
+    if (chooseRes == null) {
+      return new util.HashMap()
+    }
+    val result: util.Map[TopicPartition, OffsetData] = new util.HashMap[TopicPartition, OffsetData]()
+    for (elem <- chooseRes.keys) {
+      val client = validContext(elem)
+      val request: ClientRequest = RequestFactory.getListListOffsetRequest(client, elem, chooseRes(elem), IsolationLevel.READ_COMMITTED, ListOffsetRequest.LATEST_TIMESTAMP)
+      NetworkClientUtils.sendAndReceive(client, request, Time.SYSTEM)
+      val res: ListOffsetResponseHandler = request.callback().asInstanceOf[ListOffsetResponseHandler]
+      result.putAll(res.result)
+    }
+    result
+  }
+
+  def getAllTopicsMetadata(): Map[TopicPartition, Node] = {
+    val node: Node = KafkaMonitor.leastLoadedNode()
     val client = validContext(node)
-    val request: ClientRequest = RequestFactory.getListListOffsetRequest(client, node, topicPartitions, IsolationLevel.READ_COMMITTED, ListOffsetRequest.LATEST_TIMESTAMP)
+    val request: ClientRequest = RequestFactory.getAllTopicsRequest(client, node)
     NetworkClientUtils.sendAndReceive(client, request, Time.SYSTEM)
-    val res: ListOffsetResponseHandler = request.callback().asInstanceOf[ListOffsetResponseHandler]
-    res.result
+    val res: GetAllTopicsResponseHandler = request.callback().asInstanceOf[GetAllTopicsResponseHandler]
+    res.tpNode
   }
 
   /**
@@ -172,3 +232,4 @@ object ExternalEntrance extends AbstractEntrance with Logging {
     node
   }
 }
+

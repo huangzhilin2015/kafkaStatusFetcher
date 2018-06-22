@@ -12,7 +12,6 @@ import org.apache.kafka.common.requests.DescribeGroupsResponse.GroupMetadata
   */
 class DescribeGroupsResponseHandler(groupId: String, node: Node, client: NetworkClient) extends Callbackable[CommonContext] {
   var result: GroupMetadata = null
-  var errors: List[Errors] = List()
 
   override def onComplete(response: ClientResponse) = {
     val resp: DescribeGroupsResponse = response.responseBody().asInstanceOf[DescribeGroupsResponse]

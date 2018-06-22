@@ -16,7 +16,6 @@ import scala.collection.JavaConverters._
   * Created by huangzhilin on 2018-05-18.
   */
 class FetchCommitedOffsetResponseHandler(groupId: String, node: Node, client: NetworkClient) extends Callbackable[CommonContext] {
-  var errors: List[Errors] = List()
   var result: util.Map[TopicPartition, OffsetAndMetadata] = null
 
   override def onComplete(response: ClientResponse): Unit = {

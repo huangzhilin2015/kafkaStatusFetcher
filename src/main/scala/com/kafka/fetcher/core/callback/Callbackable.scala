@@ -11,6 +11,7 @@ import org.apache.kafka.common.protocol.Errors
   */
 trait Callbackable[T] extends RequestCompletionHandler with Logging {
   var future: CallBackFuture[T] = new CallBackFuture[T]
+  var errors: List[Errors] = List()
 
   def addFutureListener(handler: CallBackFutureHandler[T]): Callbackable[T] = {
     future.addListener(handler)

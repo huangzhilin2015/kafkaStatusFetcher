@@ -13,7 +13,6 @@ import org.apache.kafka.common.utils.Time
   */
 class GroupCoordinatorResponseHandler(groupId: String, client: NetworkClient, node: Node, time: Time = Time.SYSTEM) extends Callbackable[CommonContext] {
   var coordinator: Node = null
-  var errors: List[Errors] = List()
 
   override def onComplete(response: ClientResponse): Unit = {
     debug(s"Received GroupCoordinator response ${response}")

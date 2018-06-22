@@ -111,5 +111,18 @@ object RequestFactory {
         .addFutureListener(new GroupCoordinatorUpdateHandler()))
   }
 
+  /**
+    * 获取元数据
+    *
+    * @param client
+    * @param node
+    * @param time
+    * @return
+    */
+  def getAllTopicsRequest(client: NetworkClient, node: Node, time: Time = Time.SYSTEM): ClientRequest = {
+    client.newClientRequest(node.idString(), MetadataRequest.Builder.allTopics, time.milliseconds(), true,
+      new GetAllTopicsResponseHandler(null, client, node, time))
+  }
+
 
 }

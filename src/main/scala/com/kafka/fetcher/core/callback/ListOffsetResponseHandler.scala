@@ -15,7 +15,6 @@ import scala.collection.JavaConverters._
   * Created by huangzhilin on 2018-05-18.
   */
 class ListOffsetResponseHandler(groupId: String, node: Node, client: NetworkClient) extends Callbackable[CommonContext] {
-  var errors: List[Errors] = List()
   var result: util.Map[TopicPartition, OffsetData] = new util.HashMap()
 
   override def onComplete(response: ClientResponse) = {

@@ -14,7 +14,6 @@ import scala.collection.JavaConverters._
   */
 class ListGroupResponseHandler(node: Node, client: NetworkClient) extends Callbackable[CommonContext] {
   var result: List[GroupOverview] = null
-  var errors: List[Errors] = List()
 
   override def onComplete(response: ClientResponse) = {
     debug(s"Received ListGroup response ${response}")

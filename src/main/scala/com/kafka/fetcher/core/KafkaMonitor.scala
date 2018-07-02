@@ -22,7 +22,7 @@ import scala.util.Random
 object KafkaMonitor extends Logging {
   private[core] var zkUtils: ZkUtils = null
   private[core] var config: KafkaMonitorConfig = null
-  private var networkClient: NetworkClient = null
+  @volatile private var networkClient: NetworkClient = null
   private var clientPoll: Map[String, List[NetworkClient]] = Map()
   @volatile private var inited: Boolean = false
   //缓存GroupCoordinator之后，不再主动确认节点状态，变更只由回调状态触发
@@ -82,6 +82,13 @@ object KafkaMonitor extends Logging {
       throw new ConfigInvalidException(s"config key of ${KafkaMonitorConfig.CLIENT_PROVIDE_MODE} is invalid," +
         s"must be ${DefaultConfig.CLIENT_PROVIDE_MODE_SIGLETON} or ${DefaultConfig.cLIENT_PROVIDE_MODE_MULTIPLE}")
     }
+  }
+
+  def restartClient(): NetworkClient = {
+    debug("restart client.")
+    val addresses: util.List[InetSocketAddress] = parseAndValidteAddress()
+    networkClient = createClient(addresses)
+    networkClient
   }
 
   /**
